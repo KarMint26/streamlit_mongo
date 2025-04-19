@@ -1,0 +1,11 @@
+requests
+beautifulsoup4
+pandas
+streamlit
+matplotlib
+seaborn
+pymongo
+dnspython
+plotly
+plotly.express
+wordcloud
