@@ -9,3 +9,4 @@ dnspython
 plotly
 plotly.express
 wordcloud
+python-dotenv
