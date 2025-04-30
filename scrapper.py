@@ -21,7 +21,7 @@ logging.basicConfig(
 # MongoDB connection
 try:
     client = MongoClient("mongodb://localhost:27017/", serverSelectionTimeoutMS=5000)
-    client.server_info()
+    client.server_info()  # Test connection
     db = client["sr"]
     collection = db["woman_abuse"]
     logging.info("✅ Berhasil terhubung ke MongoDB")
@@ -54,6 +54,13 @@ def scrape_news():
         logging.info(f"✅ Ditemukan {len(articles)} artikel dari API")
 
         news_data = []
+        keywords = [
+            "kekerasan perempuan", "kdrt", "pemerkosaan", "pelecehan seksual",
+            "pelecehan", "eksploitasi perempuan", "tindak kekerasan",
+            "korban perempuan", "kasus perempuan", "perkosaan",
+            "kekerasan seksual", "perempuan jadi korban", "femicide",
+            "perdagangan manusia", "trafficking"
+        ]
 
         for article in articles[:100]:  # Batasi 100 artikel
             try:
@@ -71,13 +78,18 @@ def scrape_news():
                     logging.info(f"Duplikat, sudah ada di DB: {title}")
                     continue
 
+                # Periksa kata kunci di judul dan deskripsi
+                content_to_check = (title.lower() + " " + (description.lower() if description else ""))
+                matching_keywords = [keyword for keyword in keywords if keyword in content_to_check]
+
                 news_item = {
                     "title": title,
                     "link": link,
                     "date": article.get('pubDate', datetime.now().strftime('%Y-%m-%d')),
                     "content": description or 'No description',
                     "image": article.get('image_url', 'No image'),
-                    "scraped_at": datetime.now()
+                    "scraped_at": datetime.now(),
+                    "keywords_found": matching_keywords
                 }
 
                 news_data.append(news_item)
