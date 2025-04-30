@@ -17,13 +17,20 @@ mongo_client = None
 def init_mongo():
     global mongo_client
     try:
-        mongo_client = MongoClient("mongodb://localhost:27017/", serverSelectionTimeoutMS=5000)
+        # Only create a new client if it doesn't exist or is closed
+        if mongo_client is None or mongo_client._closed:
+            mongo_client = MongoClient("mongodb://localhost:27017/", serverSelectionTimeoutMS=5000)
         mongo_client.server_info()  # Test connection
         db = mongo_client["sr"]
+        logging.info("✅ Successfully connected to MongoDB")
         return db
     except ConnectionFailure as e:
-        st.error(f"Gagal terhubung ke MongoDB: {e}")
+        st.error(f"❌ Gagal terhubung ke MongoDB: {e}")
         logging.error(f"MongoDB connection error: {e}")
+        return None
+    except Exception as e:
+        st.error(f"❌ Error saat menghubungkan ke MongoDB: {e}")
+        logging.error(f"Unexpected MongoDB connection error: {e}")
         return None
 
 # Fungsi untuk mengambil data dari MongoDB
@@ -46,7 +53,7 @@ def fetch_data():
         logging.info(f"Data fetched: {len(df)} articles")
         return df
     except Exception as e:
-        st.error(f"Gagal mengambil data dari MongoDB: {e}")
+        st.error(f"❌ Gagal mengambil data dari MongoDB: {e}")
         logging.error(f"Error fetching data: {e}")
         return pd.DataFrame()
 
@@ -54,13 +61,15 @@ def fetch_data():
 def check_sample_data():
     db = init_mongo()
     if db is None:
-        return "Tidak dapat terhubung ke MongoDB"
+        return {"error": "Tidak dapat terhubung ke MongoDB"}
     try:
         collection = db["woman_abuse"]
         sample = list(collection.find({}, {"title": 1, "keywords_found": 1, "_id": 0}).limit(5))
-        return sample
+        logging.info(f"Sample data fetched: {len(sample)} articles")
+        return sample if sample else {"message": "Tidak ada data di koleksi woman_abuse"}
     except Exception as e:
-        return f"Error: {str(e)}"
+        logging.error(f"Error fetching sample data: {e}")
+        return {"error": f"Gagal mengambil sampel data: {str(e)}"}
 
 # Streamlit app
 st.set_page_config(page_title="Dashboard Kekerasan Perempuan", layout="wide")
@@ -86,7 +95,7 @@ with st.sidebar:
     st.header("Debugging")
     if st.button("Tampilkan Sampel Data dari MongoDB"):
         sample_data = check_sample_data()
-        st.write("Sampel 5 artikel dari MongoDB:")
+        st.subheader("Sampel 5 Artikel dari MongoDB")
         st.json(sample_data)
 
 # Main content
@@ -185,6 +194,4 @@ if not df.empty:
 else:
     st.warning("Tidak ada data di database. Silakan jalankan 'python scraper.py' untuk mengisi data.")
 
-# Tutup koneksi MongoDB jika ada
-if mongo_client is not None:
-    mongo_client.close()
+# Tidak menutup mongo_client secara eksplisit, dikelola oleh @st.cache_resource
