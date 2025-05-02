@@ -4,9 +4,11 @@ pandas
 streamlit
 matplotlib
 seaborn
-pymongo
+pymongo[srv]
 dnspython
 plotly
 plotly.express
 wordcloud
 python-dotenv
+lxml
+nltk
