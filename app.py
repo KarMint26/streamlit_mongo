@@ -353,18 +353,6 @@ with st.sidebar:
         st.warning("Kolom 'source' tidak ditemukan dalam data untuk filter.")
 
     st.markdown("---")
-    st.header("🛠️ Debugging NLTK")
-    if st.button("Tampilkan Info NLTK Path", key="show_nltk_path_btn"):
-        st.json({"NLTK Data Paths": nltk.data.path}, expanded=True)
-    if st.button("Coba Ulang Unduh Resource NLTK (Force)", key="redownload_nltk"):
-        if 'nltk_resources_downloaded_this_session' in st.session_state: 
-            del st.session_state['nltk_resources_downloaded_this_session']
-        st.session_state.force_nltk_redownload_flag = True 
-        download_nltk_resources.clear() 
-        st.success("Mencoba mengunduh ulang resource NLTK (paksa). Periksa log dan muat ulang halaman jika perlu.")
-        st.rerun()
-
-    st.markdown("---")
     st.header("🛠️ Debugging Data")
     if st.button("Lihat Sampel Data Mentah (MongoDB)", key="sample_data_button"):
         with st.spinner("Mengambil sampel data..."):
