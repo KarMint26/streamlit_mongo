@@ -38,7 +38,6 @@ def configure_nltk_path():
             logging.info(f"Folder nltk_data dibuat di: {local_nltk_data_path}")
         except OSError as e:
             logging.error(f"Gagal membuat folder nltk_data di {local_nltk_data_path}: {e}")
-            # Tidak menampilkan st.warning di sini, biarkan NLTK menggunakan default path jika gagal
             return
     if local_nltk_data_path not in nltk.data.path:
         nltk.data.path.insert(0, local_nltk_data_path)
@@ -57,7 +56,7 @@ def download_nltk_resources():
         "corpora/stopwords": "stopwords",
         "tokenizers/punkt": "punkt"
     }
-    download_occurred_local = False # Mengganti nama variabel agar tidak konflik
+    download_occurred_local = False 
     local_nltk_data_path = os.path.join(os.getcwd(), "nltk_data")
     can_write_to_local = os.path.exists(local_nltk_data_path) and os.access(local_nltk_data_path, os.W_OK)
 
@@ -65,7 +64,7 @@ def download_nltk_resources():
 
     for resource_path, resource_name in resources_to_check.items():
         try:
-            if not st.session_state.get('force_nltk_redownload_flag', False): # Ganti nama flag
+            if not st.session_state.get('force_nltk_redownload_flag', False): 
                 nltk.data.find(resource_path)
                 logging.info(f"NLTK resource '{resource_name}' ditemukan.")
                 if resource_name == "punkt":
@@ -81,7 +80,7 @@ def download_nltk_resources():
         except LookupError:
             logging.warning(f"NLTK resource '{resource_name}' tidak ditemukan/diminta unduh ulang. Mencoba mengunduh...")
             try:
-                downloader_options = {'quiet': True} # quiet=True untuk mengurangi output
+                downloader_options = {'quiet': True} 
                 if can_write_to_local:
                     downloader_options['download_dir'] = local_nltk_data_path
                 if st.session_state.get('force_nltk_redownload_flag', False):
@@ -94,18 +93,15 @@ def download_nltk_resources():
                 download_occurred_local = True
             except Exception as e:
                 logging.error(f"Gagal mengunduh NLTK resource '{resource_name}': {e}", exc_info=True)
-                # Tidak menampilkan st.error ke UI, biarkan aplikasi mencoba lanjut
     
     if 'force_nltk_redownload_flag' in st.session_state:
-        del st.session_state['force_nltk_redownload_flag'] # Reset flag
+        del st.session_state['force_nltk_redownload_flag'] 
     
-    if download_occurred_local and 'nltk_resources_downloaded_this_session' not in st.session_state: # Ganti nama flag
+    if download_occurred_local and 'nltk_resources_downloaded_this_session' not in st.session_state: 
         st.session_state.nltk_resources_downloaded_this_session = True
         logging.info("Resource NLTK telah diunduh/diverifikasi dalam sesi ini.")
-        # Tidak st.rerun agar UI lebih stabil saat startup awal
 
 download_nltk_resources()
-
 
 # Global variable for MongoDB client
 mongo_client = None
@@ -122,14 +118,15 @@ def init_mongo():
             logging.warning("Existing MongoDB connection lost. Reconnecting.")
             mongo_client = None
     try:
-        MONGO_URI = os.getenv('MONGO_URI', "mongodb://localhost:27017/")
-        mongo_client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=5000)
-        mongo_client.server_info()
-        db = mongo_client["sr"]
+        # Pastikan URI Anda benar. Ganti dengan URI Anda jika berbeda.
+        MONGO_URI = os.getenv('MONGO_URI', "mongodb+srv://srikandi_app:srikandi123%23%23@srikandi.fdnhjdm.mongodb.net/")
+        mongo_client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=10000) # Tingkatkan timeout jika perlu
+        mongo_client.admin.command('ping') # Perintah ping lebih ringan untuk cek koneksi
+        db = mongo_client["sr"] # Ganti "sr" dengan nama database Anda
         logging.info("✅ Berhasil terhubung ke MongoDB")
         return db
     except ConnectionFailure as e:
-        st.error(f"❌ Gagal terhubung ke MongoDB: {e}.")
+        st.error(f"❌ Gagal terhubung ke MongoDB: {e}. Pastikan URI, username/password (jika ada), dan aturan firewall benar.")
         logging.error(f"MongoDB connection error: {e}")
     except Exception as e:
         st.error(f"❌ Error tidak terduga saat menghubungkan ke MongoDB: {e}")
@@ -142,7 +139,7 @@ def fetch_data():
     db = init_mongo()
     if db is None: return pd.DataFrame()
     try:
-        collection = db["woman_abuse"]
+        collection = db["woman_abuse"] # Ganti dengan nama koleksi Anda
         data = list(collection.find({}, {"title": 1, "date": 1, "content": 1, "keywords_found": 1, "source": 1, "_id": 0}))
         df = pd.DataFrame(data)
         if df.empty:
@@ -190,9 +187,8 @@ def get_word_frequencies(_df):
     text_corpus = ' '.join(text_corpus.split())
 
     tokens = []
-    final_tokenizer_method = "NLTK (default)" # Default jika semua percobaan gagal
+    final_tokenizer_method = "NLTK (default)" 
 
-    # 1. Coba 'indonesian'
     try:
         logging.info("Mencoba tokenisasi dengan NLTK (indonesian).")
         tokens = nltk.word_tokenize(text_corpus, language='indonesian')
@@ -200,7 +196,6 @@ def get_word_frequencies(_df):
         logging.info("Tokenisasi berhasil menggunakan NLTK (indonesian).")
     except LookupError:
         logging.warning("NLTK LookupError untuk model punkt 'indonesian'. Mencoba 'malay'.")
-        # 2. Coba 'malay' jika 'indonesian' gagal
         try:
             logging.info("Mencoba tokenisasi dengan NLTK (malay).")
             tokens = nltk.word_tokenize(text_corpus, language='malay')
@@ -208,7 +203,6 @@ def get_word_frequencies(_df):
             logging.info("Tokenisasi berhasil menggunakan NLTK (malay).")
         except LookupError:
             logging.warning("NLTK LookupError untuk model punkt 'malay'. Mencoba NLTK default (kemungkinan english).")
-            # 3. Coba NLTK default (tanpa parameter language) jika 'malay' gagal
             try:
                 logging.info("Mencoba tokenisasi dengan NLTK default (tanpa parameter bahasa).")
                 tokens = nltk.word_tokenize(text_corpus) 
@@ -223,9 +217,7 @@ def get_word_frequencies(_df):
             try:
                 tokens = nltk.word_tokenize(text_corpus)
                 final_tokenizer_method = "NLTK (default/english)"
-                logging.info("Tokenisasi berhasil menggunakan NLTK default setelah error pada 'malay'.")
             except Exception as e_final_fallback:
-                logging.error(f"Error saat tokenisasi NLTK default (setelah error malay): {e_final_fallback}. Fallback ke regex.")
                 tokens = re.findall(r'\b\w+\b', text_corpus)
                 final_tokenizer_method = "Regex Fallback (NLTK default error)"
     except Exception as e_indonesian_nltk: 
@@ -233,21 +225,19 @@ def get_word_frequencies(_df):
         try:
             tokens = nltk.word_tokenize(text_corpus)
             final_tokenizer_method = "NLTK (default/english)"
-            logging.info("Tokenisasi berhasil menggunakan NLTK default setelah error pada 'indonesian'.")
         except Exception as e_final_fallback_after_id_error:
-            logging.error(f"Error saat tokenisasi NLTK default (setelah error indonesian): {e_final_fallback_after_id_error}. Fallback ke regex.")
             tokens = re.findall(r'\b\w+\b', text_corpus)
             final_tokenizer_method = "Regex Fallback (NLTK default error)"
 
     if not tokens: 
-        logging.warning("Tokenisasi menghasilkan daftar kosong setelah semua upaya NLTK. Menggunakan regex.")
-        tokens = re.findall(r'\b\w+\b', text_corpus)
-        final_tokenizer_method = "Regex (Final Fallback)"
+        logging.warning("Tokenisasi menghasilkan daftar kosong. Menggunakan regex jika belum.")
+        if not final_tokenizer_method.startswith("Regex"): # Hanya fallback jika belum regex
+            tokens = re.findall(r'\b\w+\b', text_corpus)
+            final_tokenizer_method = "Regex (Final Fallback)"
         if not tokens: 
             logging.error("Tokenisasi regex juga menghasilkan daftar kosong.")
             return Counter()
 
-    # Stopwords - Prioritaskan 'indonesian'
     stop_words_set = set()
     stopwords_language_to_try = 'indonesian'
     final_stopwords_method = "Hanya Custom" 
@@ -256,11 +246,9 @@ def get_word_frequencies(_df):
         logging.info(f"Stopwords untuk '{stopwords_language_to_try}' berhasil dimuat.")
         final_stopwords_method = f"NLTK ({stopwords_language_to_try})"
     except LookupError: 
-        logging.warning(f"LookupError: NLTK tidak punya stopwords untuk '{stopwords_language_to_try}'. Hanya custom stopwords yang akan digunakan.")
-        # Tidak ada st.warning ke UI
+        logging.warning(f"LookupError: NLTK tidak punya stopwords untuk '{stopwords_language_to_try}'.")
     except Exception as e_stopwords:
         logging.error(f"Error memuat stopwords '{stopwords_language_to_try}': {e_stopwords}", exc_info=True)
-        # Tidak ada st.error ke UI
     
     custom_stopwords = {
         'detik', 'cnn', 'indonesia', 'com', 'artikel', 'berita', 'antara', 'liputan6', 'kompas', 'tribunnews', 'suara',
@@ -365,6 +353,18 @@ with st.sidebar:
         st.warning("Kolom 'source' tidak ditemukan dalam data untuk filter.")
 
     st.markdown("---")
+    st.header("🛠️ Debugging NLTK")
+    if st.button("Tampilkan Info NLTK Path", key="show_nltk_path_btn"):
+        st.json({"NLTK Data Paths": nltk.data.path}, expanded=True)
+    if st.button("Coba Ulang Unduh Resource NLTK (Force)", key="redownload_nltk"):
+        if 'nltk_resources_downloaded_this_session' in st.session_state: 
+            del st.session_state['nltk_resources_downloaded_this_session']
+        st.session_state.force_nltk_redownload_flag = True 
+        download_nltk_resources.clear() 
+        st.success("Mencoba mengunduh ulang resource NLTK (paksa). Periksa log dan muat ulang halaman jika perlu.")
+        st.rerun()
+
+    st.markdown("---")
     st.header("🛠️ Debugging Data")
     if st.button("Lihat Sampel Data Mentah (MongoDB)", key="sample_data_button"):
         with st.spinner("Mengambil sampel data..."):
@@ -380,6 +380,7 @@ with st.sidebar:
 # --- Main Content ---
 if not df.empty:
     st.markdown("## 📈 Analisis Umum")
+    # --- Section 1: Distribusi Sumber Berita ---
     with st.container(border=True): 
         st.subheader("📰 Distribusi Artikel per Sumber Berita")
         if 'source' in df.columns and not df['source'].dropna().empty:
@@ -395,6 +396,50 @@ if not df.empty:
         elif not df_main.empty : st.info("Tidak ada data sumber berita valid untuk ditampilkan.")
 
     st.markdown("<br>", unsafe_allow_html=True)
+
+    # --- Section BARU: Tren Artikel Bulanan ---
+    with st.container(border=True):
+        st.subheader("📅 Tren Jumlah Artikel per Bulan")
+        st.markdown("Visualisasi jumlah artikel yang dipublikasikan setiap bulannya, berdasarkan data yang difilter.")
+        if 'date' in df.columns and not df.empty:
+            df_trend = df.copy()
+            # Konversi kolom 'date' ke periode bulan (YYYY-MM) untuk grouping
+            df_trend['year_month'] = df_trend['date'].dt.to_period('M').astype(str) 
+            
+            monthly_counts = df_trend.groupby('year_month').size().reset_index(name='count')
+            monthly_counts = monthly_counts.sort_values('year_month') # Urutkan berdasarkan periode
+
+            if not monthly_counts.empty:
+                fig_trend = px.line(
+                    monthly_counts,
+                    x='year_month',
+                    y='count',
+                    labels={'year_month': 'Bulan-Tahun', 'count': 'Jumlah Artikel'},
+                    template='seaborn', 
+                    markers=True, # Tampilkan marker pada titik data
+                    color_discrete_sequence=["#FF6B6B"] # Contoh warna garis
+                )
+                fig_trend.update_layout(
+                    title_text=None, 
+                    xaxis_title='Periode (Bulan-Tahun)',
+                    yaxis_title='Jumlah Artikel',
+                    plot_bgcolor='rgba(245, 245, 245, 1)', # Warna latar plot sedikit abu-abu
+                    paper_bgcolor='rgba(0,0,0,0)', 
+                )
+                fig_trend.update_traces(
+                    hovertemplate="<b>Periode: %{x}</b><br>Jumlah Artikel: %{y}<extra></extra>"
+                )
+                st.plotly_chart(fig_trend, use_container_width=True)
+            else:
+                st.info("Tidak ada data yang cukup untuk menampilkan tren bulanan berdasarkan filter saat ini.")
+        elif 'date' not in df.columns and not df_main.empty: 
+            st.warning("Kolom 'date' tidak ditemukan untuk membuat grafik tren bulanan.")
+        elif not df_main.empty : 
+            st.info("Tidak ada data untuk menampilkan tren bulanan setelah filter diterapkan.")
+    # --- Akhir Section BARU ---
+
+    st.markdown("<br>", unsafe_allow_html=True)
+    
     with st.container(border=True): 
         st.subheader("🔑 Frekuensi Kata Kunci Pencarian Awal")
         if 'keywords_found' in df.columns and not df.empty:

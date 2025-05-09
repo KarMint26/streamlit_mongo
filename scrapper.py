@@ -20,7 +20,7 @@ logging.basicConfig(
 
 # MongoDB connection
 try:
-    client = MongoClient("mongodb://localhost:27017/", serverSelectionTimeoutMS=5000)
+    client = MongoClient("mongodb+srv://srikandi_app:srikandi123%23%23@srikandi.fdnhjdm.mongodb.net/", serverSelectionTimeoutMS=5000)
     client.server_info()  # Test connection
     db = client["sr"]
     collection = db["woman_abuse"]
