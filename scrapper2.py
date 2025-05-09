@@ -20,7 +20,7 @@ logging.basicConfig(
 # MongoDB connection
 try:
     # Pastikan MONGO_URI di file .env sudah benar
-    MONGO_URI = os.getenv('MONGO_URI', "mongodb+srv://srikandi_app:srikandi123%23%23@srikandi.fdnhjdm.mongodb.net/")
+    MONGO_URI = os.getenv('MONGO_URI', "mongodb+srv://srikandi_app:srikandi123%23%23@srikandi.fdnhjdm.mongodb.net/test?retryWrites=true&w=majority")
     client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=5000)
     # Test the connection
     client.server_info()
