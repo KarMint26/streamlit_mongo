@@ -20,7 +20,8 @@ logging.basicConfig(
 
 # MongoDB connection
 try:
-    client = MongoClient("mongodb+srv://srikandi_app:srikandi123%23%23@srikandi.fdnhjdm.mongodb.net/test?retryWrites=true&w=majority", serverSelectionTimeoutMS=5000)
+    MONGO_URI = os.getenv('MONGO_URI')
+    client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=5000)
     client.server_info()  # Test connection
     db = client["sr"]
     collection = db["woman_abuse"]

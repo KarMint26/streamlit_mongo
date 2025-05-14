@@ -119,7 +119,7 @@ def init_mongo():
             mongo_client = None
     try:
         # Pastikan URI Anda benar. Ganti dengan URI Anda jika berbeda.
-        MONGO_URI = os.getenv('MONGO_URI', "mongodb+srv://srikandi_app:srikandi123%23%23@srikandi.fdnhjdm.mongodb.net/test?retryWrites=true&w=majority")
+        MONGO_URI = st.secrets["mongo"]["uri"]
         mongo_client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=10000) # Tingkatkan timeout jika perlu
         mongo_client.admin.command('ping') # Perintah ping lebih ringan untuk cek koneksi
         db = mongo_client["sr"] # Ganti "sr" dengan nama database Anda
