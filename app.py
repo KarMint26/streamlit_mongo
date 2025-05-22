@@ -385,46 +385,54 @@ if not df.empty:
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # --- Section BARU: Tren Artikel Bulanan ---
+        # --- Section Baru: Tren Artikel per Tanggal ---
     with st.container(border=True):
-        st.subheader("📅 Tren Jumlah Artikel per Bulan")
-        st.markdown("Visualisasi jumlah artikel yang dipublikasikan setiap bulannya, berdasarkan data yang difilter.")
-        if 'date' in df.columns and not df.empty:
-            df_trend = df.copy()
-            # Konversi kolom 'date' ke periode bulan (YYYY-MM) untuk grouping
-            df_trend['year_month'] = df_trend['date'].dt.to_period('M').astype(str) 
-            
-            monthly_counts = df_trend.groupby('year_month').size().reset_index(name='count')
-            monthly_counts = monthly_counts.sort_values('year_month') # Urutkan berdasarkan periode
+        st.subheader("📅 Tren Jumlah Artikel per Tanggal")
+        st.markdown("Visualisasi jumlah artikel yang dipublikasikan setiap harinya, berdasarkan data yang difilter.")
 
-            if not monthly_counts.empty:
-                fig_trend = px.line(
-                    monthly_counts,
-                    x='year_month',
-                    y='count',
-                    labels={'year_month': 'Bulan-Tahun', 'count': 'Jumlah Artikel'},
-                    template='seaborn', 
-                    markers=True, # Tampilkan marker pada titik data
-                    color_discrete_sequence=["#FF6B6B"] # Contoh warna garis
-                )
-                fig_trend.update_layout(
-                    title_text=None, 
-                    xaxis_title='Periode (Bulan-Tahun)',
-                    yaxis_title='Jumlah Artikel',
-                    plot_bgcolor='rgba(245, 245, 245, 1)', # Warna latar plot sedikit abu-abu
-                    paper_bgcolor='rgba(0,0,0,0)', 
-                )
-                fig_trend.update_traces(
-                    hovertemplate="<b>Periode: %{x}</b><br>Jumlah Artikel: %{y}<extra></extra>"
-                )
-                st.plotly_chart(fig_trend, use_container_width=True)
-            else:
-                st.info("Tidak ada data yang cukup untuk menampilkan tren bulanan berdasarkan filter saat ini.")
-        elif 'date' not in df.columns and not df_main.empty: 
-            st.warning("Kolom 'date' tidak ditemukan untuk membuat grafik tren bulanan.")
-        elif not df_main.empty : 
-            st.info("Tidak ada data untuk menampilkan tren bulanan setelah filter diterapkan.")
-    # --- Akhir Section BARU ---
+        if df is not None and not df.empty and 'date' in df.columns:
+            try:
+                # Pastikan kolom date dalam format datetime
+                df['date'] = pd.to_datetime(df['date'], errors='coerce')
+                df_trend = df.dropna(subset=['date']).copy()
+
+                # Ekstrak hanya tanggal (tanpa jam)
+                df_trend['tanggal'] = df_trend['date'].dt.date
+
+                # Hitung jumlah artikel per tanggal
+                daily_counts = df_trend.groupby('tanggal').size().reset_index(name='count')
+                daily_counts = daily_counts.sort_values('tanggal')
+
+                if not daily_counts.empty:
+                    fig_daily = px.line(
+                        daily_counts,
+                        x='tanggal',
+                        y='count',
+                        labels={'tanggal': 'Tanggal', 'count': 'Jumlah Artikel'},
+                        title=None,
+                        template='seaborn',
+                        markers=True,
+                        color_discrete_sequence=["#FF6B6B"]
+                    )
+                    fig_daily.update_layout(
+                        xaxis_title='Tanggal',
+                        yaxis_title='Jumlah Artikel',
+                        plot_bgcolor='rgba(245, 245, 245, 1)',
+                        paper_bgcolor='rgba(0,0,0,0)',
+                    )
+                    fig_daily.update_traces(
+                        hovertemplate="<b>Tanggal: %{x}</b><br>Jumlah Artikel: %{y}<extra></extra>"
+                    )
+                    st.plotly_chart(fig_daily, use_container_width=True)
+                else:
+                    st.info("Data terlalu sedikit untuk ditampilkan dalam grafik tren harian.")
+            except Exception as e:
+                st.error(f"Terjadi kesalahan saat mengonversi tanggal: {e}")
+        else:
+            st.warning("Dataset tidak memiliki kolom 'date' atau data kosong.")
+# --- Akhir Section ---
+
+
 
     st.markdown("<br>", unsafe_allow_html=True)
     
